@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+python-multipart
+PyPDF2
+langchain-community
+ollama
+pytesseract
+pdf2image
+faiss-cpu
+langchain
+pydantic
