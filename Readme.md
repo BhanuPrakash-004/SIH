@@ -29,7 +29,7 @@ Before you begin, ensure you have the following installed on your system:
 
 1.  **Clone the Repository**
     ```bash
-    git clone [https://github.com/your-username/kmrl-insight-engine.git](https://github.com/your-username/kmrl-insight-engine.git)
+    git clone https://github.com/BhanuPrakash-004/SIH.git
     cd kmrl-insight-engine
     ```
 
