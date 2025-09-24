@@ -1,11 +1,20 @@
 fastapi
-uvicorn
-python-multipart
-PyPDF2
-langchain-community
-ollama
-pytesseract
-pdf2image
-faiss-cpu
+uvicorn[standard]
+python-dotenv
+pydantic-settings
+httpx
 langchain
-pydantic
+langchain-community
+langchain-ollama
+# For FAISS vector store
+faiss-cpu
+# For BM25 keyword search
+rank_bm25
+# For reranking models
+sentence-transformers
+# For PDF and Image processing
+PyPDF2
+pdf2image
+Pillow
+pytesseract
+langchainhub
