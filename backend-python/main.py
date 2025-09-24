@@ -160,7 +160,6 @@ async def trigger_n8n_webhooks(urls: List[str], data: dict):
 def format_docs(docs: List[Document]) -> str:
     return "\n\n".join(doc.page_content for doc in docs)
 
-# --- API ENDPOINTS ---
 @app.post("/api/upload-and-process", response_model=DocumentAnalysis)
 async def upload_and_process_document(background_tasks: BackgroundTasks, file: UploadFile = File(...), llm=Depends(get_llm), embeddings=Depends(get_embeddings)):
     file_path = os.path.join(settings.UPLOAD_DIRECTORY, file.filename)
@@ -170,13 +169,51 @@ async def upload_and_process_document(background_tasks: BackgroundTasks, file: U
 
     try:
         docs = process_and_chunk_text(content, file.filename)
+        # Use the first few chunks for a quicker analysis
         analysis_text = " ".join([doc.page_content for doc in docs[:4]])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to process document: {e}")
 
-    # LLM analysis for summary, actions, role (same as before)
-    # ... (This logic can be kept as is) ...
-    analysis = DocumentAnalysis(summary="Summary placeholder", action_items=[], assigned_role="Role placeholder")
+    # LLM analysis for summary, actions, role
+    try:
+        # Define prompts for each analysis task
+        summary_prompt = ChatPromptTemplate.from_template(
+            "Provide a concise, professional summary (around 100-150 words) of the following document content: \n\n{document}"
+        )
+        actions_prompt = ChatPromptTemplate.from_template(
+            "Extract the 3 to 5 most important, actionable tasks from the following document. Present them as a bulleted list. If no clear action items exist, respond with 'None'. \n\n{document}"
+        )
+        role_prompt = ChatPromptTemplate.from_template(
+            "Read the document and determine the single most relevant employee role to handle it. Choose ONLY from this list: [Finance Manager, Customer Manager, Safety Manager, HR Coordinator, Legal Counsel, Rolling Stock Engineer]. Respond with ONLY the role name. Document: \n\n{document}"
+        )
+
+        # Create chains by piping prompts into the LLM
+        summary_chain = summary_prompt | llm
+        actions_chain = actions_prompt | llm
+        role_chain = role_prompt | llm
+
+        # Asynchronously run all analysis chains
+        summary_result, actions_result, role_result = await asyncio.gather(
+            summary_chain.ainvoke({"document": analysis_text}),
+            actions_chain.ainvoke({"document": analysis_text}),
+            role_chain.ainvoke({"document": analysis_text})
+        )
+
+        # Process the action items string into a clean list
+        action_items_list = [
+            line.strip().lstrip('-* ').strip() for line in actions_result.split('\n') 
+            if line.strip() and "none" not in line.lower()
+        ]
+        
+        # Create the final analysis object with real data
+        analysis = DocumentAnalysis(
+            summary=summary_result.strip(),
+            action_items=action_items_list,
+            assigned_role=role_result.strip().replace("'", "").replace('"', '')
+        )
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"LLM analysis failed: {e}")
 
     # --- ADVANCED INGESTION PIPELINE ---
     # Update or create the vector store and retrievers
