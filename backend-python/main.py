@@ -216,7 +216,6 @@ async def upload_and_process_document(background_tasks: BackgroundTasks, file: U
         raise HTTPException(status_code=500, detail=f"LLM analysis failed: {e}")
 
     # --- ADVANCED INGESTION PIPELINE ---
-    # Update or create the vector store and retrievers
     vector_store = app_store.get("vector_store")
     if vector_store is None:
         app_store["vector_store"] = FAISS.from_documents(docs, embeddings)
