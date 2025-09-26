@@ -46,7 +46,6 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain.memory import ConversationBufferMemory
 
 # --- IN-MEMORY APPLICATION STORE ---
-# This dictionary will hold our models, retrievers, and chat histories
 app_store = {}
 
 # --- Pydantic Models ---
@@ -67,7 +66,6 @@ class ChatResponse(BaseModel):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Starting up application...")
-    # Initialize models and load them into the app_store
     app_store["llm"] = Ollama(model=settings.LLM_MODEL)
     app_store["embeddings"] = OllamaEmbeddings(model=settings.EMBEDDING_MODEL)
     app_store["reranker"] = CrossEncoder(settings.RERANKER_MODEL)
@@ -83,7 +81,6 @@ async def lifespan(app: FastAPI):
             allow_dangerous_deserialization=True
         )
         app_store["vector_store"] = vector_store
-        # Rebuild the BM25 retriever from the documents in the vector store
         docs_from_vectorstore = vector_store.docstore._dict.values()
         app_store["bm25_retriever"] = BM25Retriever.from_documents(docs_from_vectorstore)
         print("✅ Retrievers are ready.")
@@ -118,7 +115,6 @@ def get_retrievers():
 
 # --- HELPER FUNCTIONS ---
 def process_and_chunk_text(file_content: bytes, filename: str) -> List[Document]:
-    # (This function remains the same as your original version)
     docs = []
     file_extension = os.path.splitext(filename)[1].lower()
     if file_extension == ".pdf":
@@ -146,7 +142,6 @@ def process_and_chunk_text(file_content: bytes, filename: str) -> List[Document]
     return text_splitter.split_documents(docs)
 
 async def trigger_n8n_webhooks(urls: List[str], data: dict):
-    # (This function remains the same as your original version)
     if not urls: return
     async with httpx.AsyncClient() as client:
         tasks = [client.post(url, json=data, timeout=10) for url in urls]
@@ -176,7 +171,6 @@ async def upload_and_process_document(background_tasks: BackgroundTasks, file: U
 
     # LLM analysis for summary, actions, role
     try:
-        # Define prompts for each analysis task
         summary_prompt = ChatPromptTemplate.from_template(
             "Provide a concise, professional summary (around 100-150 words) of the following document content: \n\n{document}"
         )
